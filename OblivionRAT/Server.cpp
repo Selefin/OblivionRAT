@@ -15,6 +15,9 @@ Don't forget to link winsock32.lib otherwise your compiler won't understand the 
 #include <stdlib.h>
 #include <windows.h>
 #include <string.h>
+#include <winsock.h>
+
+#pragma comment(lib, "ws2_32.lib")
 
 //our variables, we need them globally to use them in all functions
 const char welcome[] = "Welcome, enter your password please : ";
