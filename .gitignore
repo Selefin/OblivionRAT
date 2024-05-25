@@ -33,6 +33,7 @@
 
 .vs/
 x64/
+OblivionRAT.sln
 OblivionRAT/x64/
 OblivionRAT/OblivionRAT.vcxproj
 OblivionRAT/OblivionRAT.vcxproj.filters
