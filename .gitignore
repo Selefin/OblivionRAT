@@ -32,3 +32,9 @@
 *.app
 
 .vs/
+x64/
+OblivionRAT/x64/
+OblivionRAT/OblivionRAT.vcxproj
+OblivionRAT/OblivionRAT.vcxproj.filters
+OblivionRAT/OblivionRAT.vcxproj.user
+
