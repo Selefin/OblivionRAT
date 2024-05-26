@@ -107,31 +107,3 @@ bool CheckForRemoteDebugger() {
         return false;
     }
 }
-
-bool CheckForDebuggerUsingTiming() {
-    LARGE_INTEGER frequency;
-    LARGE_INTEGER start, end;
-    double elapsed;
-
-    // Get the frequency of the high-resolution performance counter
-    QueryPerformanceFrequency(&frequency);
-
-    // Get the starting timestamp
-    QueryPerformanceCounter(&start);
-
-    // Perform a small computation or a simple sleep
-    Sleep(10);  // Sleep for 10 milliseconds
-
-    // Get the ending timestamp
-    QueryPerformanceCounter(&end);
-
-    // Calculate the elapsed time in milliseconds
-    elapsed = static_cast<double>(end.QuadPart - start.QuadPart) * 1000.0 / static_cast<double>(frequency.QuadPart);
-
-    // Debuggers might cause a delay in execution
-    if (elapsed > 15.0) {  // Assuming a threshold of 15 milliseconds
-        return true;  // Debugger is likely present
-    }
-
-    return false;  // No debugger detected
-}
