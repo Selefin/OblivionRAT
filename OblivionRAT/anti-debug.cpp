@@ -4,25 +4,26 @@ bool CheckDebugger() {
     if (IsDebuggerAttached()) //check if debugger is attached
     {
         std::cout << "Debugger detected! Exiting." << std::endl;
-        exit(1);
+        return true;
     }
     else if (CheckForRemoteDebugger()) //check if remote debugger is attached
     {
         std::cout << "Remote debugger detected! Exiting." << std::endl;
-        exit(1);
+        return true;
     }
     else if (CheckForDebuggerProcesses()) //check if debugger processes are running
     {
         std::cout << "Debugger process detected! Exiting." << std::endl;
-        exit(1);
+        return true;
     }
-    else if (CheckForDebuggerUsingTiming()) //check if debugger is using timing
-    {
-        std::cout << "Debugger detected using timing! Exiting." << std::endl;
-        exit(1);
+    else if (CheckForDebuggerUsingTiming()) //check if debugger is detected using timing
+	{
+		std::cout << "Debugger detected using timing! Exiting." << std::endl;
+        return true;
     }
     else {
         std::cout << "No debugger detected." << std::endl;
+        return false;
     }
 }
 
