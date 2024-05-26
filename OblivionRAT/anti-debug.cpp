@@ -16,11 +16,6 @@ bool CheckDebugger() {
         std::cout << "Debugger process detected! Exiting." << std::endl;
         return true;
     }
-    else if (CheckForDebuggerUsingTiming()) //check if debugger is detected using timing
-	{
-		std::cout << "Debugger detected using timing! Exiting." << std::endl;
-        return true;
-    }
     else {
         std::cout << "No debugger detected." << std::endl;
         return false;

