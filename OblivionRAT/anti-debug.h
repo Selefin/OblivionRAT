@@ -4,7 +4,7 @@
 #include <iostream>
 
 bool BugCheck(); //check if debugger is attached
-bool IsDebuggerAttached(); //check if debugger is attached
-bool CheckForDebuggerProcesses(); //check if debugger processes are running
+bool IsAttached(); //check if debugger is attached
+bool CheckForProcesses(); //check if debugger processes are running
 std::string WideCharToString(const WCHAR* wideStr); //convert a wide character string to a regular string
-bool CheckForRemoteDebugger(); //check if a remote debugger is attached
+bool CheckForRemote(); //check if a remote debugger is attached
