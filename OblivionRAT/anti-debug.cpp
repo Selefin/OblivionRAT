@@ -1,6 +1,6 @@
 #include "anti-debug.h"
 
-bool CheckDebugger() {
+bool BugCheck() {
     if (IsDebuggerAttached()) //check if debugger is attached
     {
         std::cout << "Debugger detected! Exiting." << std::endl;

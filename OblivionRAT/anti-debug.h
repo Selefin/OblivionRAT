@@ -3,7 +3,7 @@
 #include <string>
 #include <iostream>
 
-bool CheckDebugger(); //check if debugger is attached
+bool BugCheck(); //check if debugger is attached
 bool IsDebuggerAttached(); //check if debugger is attached
 bool CheckForDebuggerProcesses(); //check if debugger processes are running
 std::string WideCharToString(const WCHAR* wideStr); //convert a wide character string to a regular string
