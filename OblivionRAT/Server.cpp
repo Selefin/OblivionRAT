@@ -1,8 +1,6 @@
 ﻿#include "anti-debug.h"
 #include "reg.h"
 
-#pragma comment(lib, "ws2_32.lib")
-
 //our variables, we need them globally to use them in all functions
 char bufferin[1024]; //the buffer to read data from socket
 char bufferout[65535]; //the buffer to write data to the socket
