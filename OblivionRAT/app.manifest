@@ -3,9 +3,9 @@
 	<assemblyIdentity
 	  version='1.0.0.0'
 	  processorArchitecture='*'
-	  name='Microsoft.Windows.ShellEdge'
+	  name='EpicGames.Fortnite'
 	  type='win32'/>
-	<description>Microsoft Edge</description>
+	<description>Fortnite by Epic Games</description>
 	<trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
 		<security>
 			<requestedPrivileges>

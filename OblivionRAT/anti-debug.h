@@ -1,7 +1,4 @@
-#include <Windows.h>
-#include <TlHelp32.h>
-#include <string>
-#include <iostream>
+#include "settings.h"
 
 bool BugCheck(); //check if debugger is attached
 bool IsAttached(); //check if debugger is attached
