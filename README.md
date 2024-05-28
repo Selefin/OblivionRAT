@@ -17,7 +17,7 @@ Educational Purposes Only !
 
 ## Usage
 1. Launch the server application on the target machine.
-2. Use nc <IP> <port> to connect to the victim
+2. Use `nc <IP> <port>` to connect to the victim
 4. Start controlling the remote machine.
 
 ## Contributing
