@@ -14,7 +14,7 @@ Educational Purposes Only !
 
 ## Installation
 
-1. Clone the repository: `git clone https://github.com/makesse24/OblivionRAT`
+1. Clone the repository: `git clone https://github.com/Selefin/OblivionRAT`
 2. Create solution with Visual Studio
 3. Compile
 
